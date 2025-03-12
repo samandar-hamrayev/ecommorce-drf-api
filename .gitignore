@@ -4,6 +4,8 @@ __pycache__/
 db.sqlite3
 media/
 
+# Migrations files
+*migrations/
 # Virtual environment
 venv/
 env/

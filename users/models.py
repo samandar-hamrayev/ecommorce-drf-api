@@ -48,6 +48,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
+    objects = UserManager()
+
+    #for email confirmation
+    confirmation_code = models.CharField(max_length=6, null=True, blank=True)
+
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name']
 
