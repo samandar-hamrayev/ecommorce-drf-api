@@ -3,9 +3,14 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from .serializers import UserRegisterSerializer, UserConfirmEmailSerializer, UserSerializer
+from .serializers import (
+    UserRegisterSerializer,
+    UserConfirmEmailSerializer,
+    UserSerializer, UpdatePasswordSerializer,
+    ResetPasswordSerializer,
+    ResetPasswordConfirmSerializer
+)
 from rest_framework import generics, permissions
-from .serializers import UserSerializer
 from .models import User
 from .permissions import IsAdminOrOwner
 
@@ -73,4 +78,37 @@ class UserDetailView(generics.RetrieveUpdateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAdminOrOwner]
+
+class UpdatePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request):
+        serializer = UpdatePasswordSerializer(data=request.data, context={"request":request})
+        if serializer.is_valid():
+            serializer.update_password()
+            return Response({"message": "Password updated successfully"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ResetPassworView(APIView):
+    permission_classes = [AllowAny]
+    def post(self, request):
+        serializer = ResetPasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Verification code has been sent to your email"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ResetPasswordConfirmView(APIView):
+    permission_classes = [AllowAny]
+    def post(self, request):
+        serializer = ResetPasswordConfirmSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
 
