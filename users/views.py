@@ -4,10 +4,14 @@ from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .serializers import UserRegisterSerializer, UserConfirmEmailSerializer, UserSerializer
+from rest_framework import generics, permissions
+from .serializers import UserSerializer
 from .models import User
+from .permissions import IsAdminOrOwner
 
 
-class RegisterView(APIView):
+
+class RegisterAPIView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -20,7 +24,7 @@ class RegisterView(APIView):
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class ConfirmEmailView(APIView):
+class ConfirmEmailAPIView(APIView):
     permission_classes = [AllowAny]
     def post(self, request):
         serializer = UserConfirmEmailSerializer(data=request.data)
@@ -35,13 +39,14 @@ class ConfirmEmailView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
-class UserLogoutView(APIView):
+class LogoutAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        refresh_token = request.data["refresh"]
+        if not refresh_token:
+            return Response({"error": "Refresh token is required"}, status=status.HTTP_400_BAD_REQUEST)
         try:
-            refresh_token = request.data["refresh"]
             token = RefreshToken(refresh_token)
             token.blacklist()
             return Response({"message": "Successfully logged out"}, status=status.HTTP_205_RESET_CONTENT)
@@ -49,29 +54,23 @@ class UserLogoutView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UserProfileView(APIView):
-    permission_classes = [IsAuthenticated]
+class ProfileAPIView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-    def get(self, request):
-        serializer = UserSerializer(request.user)
-        return Response(serializer.data)
+    def get_object(self):
+        return self.request.user
 
-    def put(self, request):
-        serializer = UserSerializer(request.user, request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def patch(self, request):
-        serializer = UserSerializer(request.user, request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, requst):
-        requst.user.delete()
-        return Response({"message": "User deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+class UserListView(generics.ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAdminUser]
 
+
+class UserDetailView(generics.RetrieveUpdateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAdminOrOwner]
 

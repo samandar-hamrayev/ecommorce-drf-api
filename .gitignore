@@ -10,6 +10,9 @@ media/
 venv/
 env/
 
+# images
+user-avatars
+
 # Environment variables
 *.env
 
