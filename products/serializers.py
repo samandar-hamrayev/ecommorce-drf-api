@@ -47,17 +47,16 @@ class BrandSerializer(serializers.ModelSerializer):
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
-    product = None # productserializer qoyiladi
+    product = serializers.PrimaryKeyRelatedField(queryset=models.Product.objects.all())
 
     class Meta:
         model = models.ProductImage
-        fields = ['product', 'image', 'alt_text', 'is_primary']
-        read_only_fields = ['product']
+        fields = ['id', 'product', 'image', 'alt_text', 'is_primary']
 
     def create(self, validated_data):
         product = validated_data['product']
-        if product.created_by != self.context['request']:
-            return serializers.ValidationError(
+        if product.created_by != self.context['request'].user:
+            raise serializers.ValidationError(
                 {"error": "You are not the creator of this product and cannot add images."},
             code=403)
         return super().create(validated_data)
