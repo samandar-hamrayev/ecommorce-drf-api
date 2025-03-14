@@ -48,10 +48,15 @@ class BrandSerializer(serializers.ModelSerializer):
 
 class ProductImageSerializer(serializers.ModelSerializer):
     product = serializers.PrimaryKeyRelatedField(queryset=models.Product.objects.all())
+    created_by = serializers.SerializerMethodField()
 
     class Meta:
         model = models.ProductImage
-        fields = ['id', 'product', 'image', 'alt_text', 'is_primary']
+        fields = ['id', 'product', 'image', 'alt_text', 'is_primary', 'created_by']
+        read_only_fields = ['created_by']
+
+    def get_created_by(self, obj):
+        return users.serializers.UserSerializer(obj.product.created_by).data
 
     def create(self, validated_data):
         product = validated_data['product']

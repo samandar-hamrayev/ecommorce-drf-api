@@ -41,17 +41,6 @@ class ProductImageView(viewsets.ModelViewSet):
             return [permissions.IsProductOwner()]
         return [IsAdminUser()]
 
-    def perform_create(self, serializer):
-        product_id = self.request.data.get('product')
-        product = models.Product.objects.get(id=product_id)
-        return serializer.save()
-
-
-    def get_queryset(self):
-        if self.request.user.is_authenticated:
-            return models.ProductImage.objects.filter(product__created_by=self.request.user)
-        return models.ProductImage.objects.none()
-
 
 
 
