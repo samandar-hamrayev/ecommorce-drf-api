@@ -11,7 +11,7 @@ venv/
 env/
 
 # images
-user-avatars
+images
 
 # Environment variables
 *.env
