@@ -3,9 +3,11 @@ from . import views
 
 router = DefaultRouter()
 
-router.register(r'categories', views.CategoryListView, basename='category')
-router.register('brands', views.BrandListView, basename='brand')
-router.register('product-images', views.ProductImageView, basename='product-image')
+router.register(r'categories', views.CategoryListViewSet, basename='category')
+router.register(r'brands', views.BrandListViewSet, basename='brand')
+router.register(r'products', views.ProductViewSet, basename='product')
+router.register(r'product-fields', views.ProductFieldViewSet, basename='product-field')
+router.register(r'product-field-values', views.ProductFieldValueViewSet, basename='product-field-value')
 
 
 urlpatterns = router.urls

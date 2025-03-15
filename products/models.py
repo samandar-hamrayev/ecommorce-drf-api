@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from users.models import User
@@ -28,7 +30,7 @@ class Brand(models.Model):
 
 class ProductImage(models.Model):
     product = models.ForeignKey('Product', on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to='images/product-images/')
+    image = models.FileField(upload_to='images/product-images/')
     alt_text = models.TextField(max_length=255, blank=True)
     is_primary = models.BooleanField(default=False)
 
@@ -64,7 +66,7 @@ class Product(models.Model):
     brand = models.ForeignKey(Brand, on_delete=models.SET_NULL, null=True, blank=True, related_name='products')
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True, related_name='created_products')
     description = models.TextField()
-    price = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(0)])
+    price = models.DecimalField(max_digits=14, decimal_places=2, validators=[MinValueValidator(Decimal(0))])
     stock = models.PositiveIntegerField(default=0)
     discount = models.PositiveSmallIntegerField(default=0, validators=[MaxValueValidator(90), MinValueValidator(0)])
     created = models.DateTimeField(auto_now_add=True)
@@ -80,6 +82,10 @@ class Product(models.Model):
         if ratings.exists():
             return round(sum(rating.value for rating in ratings) / ratings.count(), 2)
         return 0
+
+    @property
+    def discounted_price(self):
+        return round(Decimal(self.price * (1 - Decimal(self.discount / 100))))
 
 
 
