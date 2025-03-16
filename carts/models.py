@@ -1,5 +1,4 @@
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
 from users.models import User
 from products.models import Product
 
@@ -19,7 +18,7 @@ class Basket(models.Model):
 class BasketItem(models.Model):
     basket = models.ForeignKey(Basket, on_delete=models.CASCADE, related_name='items')
     product =  models.ForeignKey(Product, on_delete=models.CASCADE, related_name='basket_items')
-    quantity = models.PositiveSmallIntegerField(default=1, validators=[MinValueValidator(1)])
+    quantity = models.IntegerField(default=1)
     added_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -27,7 +26,7 @@ class BasketItem(models.Model):
 
     @property
     def total_price(self):
-        return self.product.price * self.quantity
+        return self.product.discounted_price * self.quantity
 
     class Meta:
         unique_together = ('product', 'basket')
