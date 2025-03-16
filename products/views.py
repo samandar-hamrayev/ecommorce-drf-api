@@ -99,8 +99,8 @@ class ProductImageViewSet(ModelViewSet):
     filterset_class = ProductImageFilter
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     search_fields = ['alt_text']
-    ordering_fields = ['created', 'is_primary']
-    ordering = ['-created']
+    ordering_fields = ['product', 'is_primary']
+    ordering = ['-product']
 
     def get_permissions(self):
         if self.action in ('create', 'update', 'partial_update', 'destroy'):
@@ -150,8 +150,8 @@ class ProductFieldValueViewSet(ModelViewSet):
     filterset_class = ProductFieldValueFilter
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     search_fields = ['value']
-    ordering_fields = ['value', 'created']
-    ordering = ['-created']
+    ordering_fields = ['value', 'product']
+    ordering = ['-product']
 
     def get_permissions(self):
         if self.action in ('create', 'update', 'partial_update', 'destroy'):
