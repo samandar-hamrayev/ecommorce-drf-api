@@ -11,6 +11,7 @@ router.register(r'brands', BrandViewSet, basename='brand')
 router.register(r'products', ProductViewSet, basename='product')
 router.register(r'images', ProductImageViewSet, basename='images')
 router.register(r'product-fields', ProductFieldViewSet, basename='product-field')
+router.register(r'product-field-values', ProductFieldValueViewSet, basename='product-field-value')
 
 
 # nested url for category
