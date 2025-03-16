@@ -110,7 +110,7 @@ class ProductImageViewSet(ModelViewSet):
     def get_queryset(self):
         product_id = self.kwargs.get('product_pk')
         if not product_id:
-            raise ValidationError({"error": "Product ID is required."})
+            return ProductImage.objects.all()
         return ProductImage.objects.filter(product_id=product_id)
 
     def perform_create(self, serializer):
