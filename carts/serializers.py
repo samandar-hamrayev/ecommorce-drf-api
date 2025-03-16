@@ -1,13 +1,11 @@
 from rest_framework import serializers
 from .models import Basket, BasketItem
-from products.serializers import ProductListSerializer
-from users.serializers import UserSerializer
 from products.models import Product
 from rest_framework.response import Response
 
 
 class BasketItemSerializer(serializers.ModelSerializer):
-    product = ProductListSerializer(read_only=True)
+    product = serializers.PrimaryKeyRelatedField(read_only=True)
     product_id = serializers.PrimaryKeyRelatedField(
         queryset=Product.objects.all(), source='product', write_only=True
     )
@@ -74,7 +72,7 @@ class BasketItemSerializer(serializers.ModelSerializer):
 
 class BasketSerializer(serializers.ModelSerializer):
     items = BasketItemSerializer(many=True, read_only=True)
-    user = UserSerializer(read_only=True)
+    user = serializers.PrimaryKeyRelatedField(read_only=True)
     total_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
 
     class Meta:
