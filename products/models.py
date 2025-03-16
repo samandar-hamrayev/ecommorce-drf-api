@@ -2,8 +2,8 @@ from decimal import Decimal
 
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
-from users.models import User
-
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 class Category(models.Model):
     name = models.CharField(max_length=255, unique=True)

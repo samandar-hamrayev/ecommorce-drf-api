@@ -1,169 +1,219 @@
-from rest_framework import serializers, status
-
-import users.serializers
-from . import models
-
+from rest_framework.serializers import ModelSerializer, PrimaryKeyRelatedField, SerializerMethodField, ValidationError
+from .models import Category, Brand, Product, ProductImage, ProductField, ProductsFieldValue
+from users.serializers import UserSerializer
 
 
-class ProductFieldValueSerializer(serializers.ModelSerializer):
-    product = serializers.StringRelatedField()
-    field = serializers.SerializerMethodField()
-
+class ProductFieldSerializer(ModelSerializer):
     class Meta:
-        model = models.ProductsFieldValue
-        fields = ['field', 'value', 'product']
-        read_only_fields = ['product', 'field']
-
-    def get_product(self, obj):
-        return ProductSerializer(obj.product, context=self.context).data
-
-    def get_field(self, obj):
-        return ProductFieldSerializer(obj.field, context=self.context).data
+        model = ProductField
+        fields = ['id', 'name', 'field_type', 'choices']
 
 
-
-class ProductImageSerializer(serializers.ModelSerializer):
+class ProductImageSerializer(ModelSerializer):
     class Meta:
-        model = models.ProductImage
+        model = ProductImage
         fields = ['id', 'image', 'alt_text', 'is_primary']
-        read_only_fields = ['created_by']
-
+        read_only_fields = ['id']
 
     def _update_primary_image(self, product, is_primary):
-        """bitta productda is_primary imagening yagonaligin saqlash"""
         if is_primary:
-            existing_images = models.ProductImage.objects.filter(product=product)
-            existing_images.filter(is_primary=True).update(is_primary=False)
+            ProductImage.objects.filter(product=product, is_primary=True).update(is_primary=False)
 
     def create(self, validated_data):
-        product = validated_data.get('product')
-        if not product and 'product' in self.context:
-            product = self.context['product']
+        product = self.context.get('product')
         if not product:
-            raise serializers.ValidationError({"error": "Product is required."})
-
+            raise ValidationError({"error": "Product is required."})
+        if product.created_by != self.context['request'].user:
+            raise ValidationError({"error": "You are not the owner of this product."}, code=403)
         is_primary = validated_data.get('is_primary', False)
         self._update_primary_image(product, is_primary)
+        validated_data['product'] = product
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        if instance.product.created_by != self.context['request'].user:
+            raise ValidationError({"error": "You are not the owner of this product."}, code=403)
+        is_primary = validated_data.get('is_primary', instance.is_primary)
+        self._update_primary_image(instance.product, is_primary)
+        return super().update(instance, validated_data)
+
+
+class ProductFieldValueSerializer(ModelSerializer):
+    field = PrimaryKeyRelatedField(queryset=ProductField.objects.all())
+
+    class Meta:
+        model = ProductsFieldValue
+        fields = ['id', 'field', 'value']
+
+    def create(self, validated_data):
+        product = self.context.get('product')
+        if not product:
+            raise ValidationError({"error": "Product is required."})
+        if product.created_by != self.context['request'].user:
+            raise ValidationError({"error": "You are not the owner of this product."}, code=403)
+        validated_data['product'] = product
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        if instance.product.created_by != self.context['request'].user:
+            raise ValidationError({"error": "You are not the owner of this product."}, code=403)
+        return super().update(instance, validated_data)
+
+
+class CategoryListSerializer(ModelSerializer):
+    products = PrimaryKeyRelatedField(many=True, read_only=True)
+
+    class Meta:
+        model = Category
+        fields = ['id', 'name', 'description','products']
+
+
+class CategoryDetailSerializer(ModelSerializer):
+    created_by = SerializerMethodField()
+    products = SerializerMethodField()
+
+    class Meta:
+        model = Category
+        fields = ['id', 'name', 'description', 'created_by', 'created', 'updated', 'products']
+        read_only_fields = ['created_by', 'created', 'updated']
+
+    def get_created_by(self, obj):
+        user = self.context['request'].user
+        if user.is_staff and user.is_superuser:
+            return UserSerializer(obj.created_by).data
+        return {"fullname": f"{obj.created_by.first_name} {obj.created_by.last_name}"}
+
+    def get_products(self, obj):
+        products = obj.products.all()
+        return ProductDetailSerializer(products, many=True, context=self.context).data
+
+    def create(self, validated_data):
+        validated_data['created_by'] = self.context['request'].user
         return super().create(validated_data)
 
 
-    def update(self, instance, validated_data):
-        product = validated_data.get('product', instance.product)
-        is_primary = validated_data.get('is_primary', instance.is_primary)
-        if product.created_by != self.context['request'].user:
-            raise serializers.ValidationError(
-                {"error": "You are not the creator of this project and cannot  update images"}
-            )
-        self._update_primary_image(product, is_primary)
-
-class ProductSerializer(serializers.ModelSerializer):
-    category = serializers.PrimaryKeyRelatedField(queryset=models.Category.objects.all())
-    brand = serializers.PrimaryKeyRelatedField(queryset=models.Brand.objects.all())
-    created_by = serializers.SerializerMethodField()
-    field_values = ProductFieldValueSerializer(many=True, read_only=True)
-    images = ProductImageSerializer(many=True)
+class BrandListSerializer(ModelSerializer):
+    products = PrimaryKeyRelatedField(many=True, read_only=True)
 
     class Meta:
-        model = models.Product
-        fields = [
-            'id', 'name', 'category', 'brand', 'created_by',
-            'description', 'price', 'discounted_price', 'stock',
-            'discount', 'created', 'updated', 'average_rating',
-            'field_values', 'images'
-        ]
-        read_only_fields = [
-            'discounted_price', 'average_rating',
-            'created', 'updated'
-        ]
+        model = Brand
+        fields = ['id', 'name', 'description', 'logo', 'products']
+
+
+class BrandDetailSerializer(ModelSerializer):
+    created_by = SerializerMethodField()
+    products = SerializerMethodField()
+
+    class Meta:
+        model = Brand
+        fields = ['id', 'name', 'description', 'logo', 'created_by', 'created', 'updated', 'products']
+        read_only_fields = ['created_by', 'created', 'updated']
 
     def get_created_by(self, obj):
-        return users.serializers.UserSerializer(obj.created_by, context=self.context).data
+        user = self.context['request'].user
+        if user.is_staff and user.is_superuser:
+            return UserSerializer(obj.created_by).data
+        return {"full_name": f"{obj.created_by.first_name} {obj.created_by.last_name}"}
+
+    def get_products(self, obj):
+        products = obj.products.all()
+        return ProductDetailSerializer(products, many=True, context=self.context).data
+
+    def create(self, validated_data):
+        validated_data['created_by'] = self.context['request'].user
+        return super().create(validated_data)
+
+
+class ProductListSerializer(ModelSerializer):
+    category = CategoryListSerializer(read_only=True)
+    brand = BrandListSerializer(read_only=True)
+    created_by = SerializerMethodField()
+    primary_image = SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = ['id', 'name', 'category', 'brand', 'created_by', 'description', 'price',
+                  'discounted_price', 'stock', 'discount', 'created', 'updated', 'average_rating',
+                  'primary_image']
+        read_only_fields = ['discounted_price', 'average_rating', 'created', 'updated']
+
+    def get_created_by(self, obj):
+        return UserSerializer(obj.created_by, context=self.context).data
+
+    def get_primary_image(self, obj):
+        primary = obj.images.filter(is_primary=True).first()
+        return ProductImageSerializer(primary, context=self.context).data if primary else None
+
+
+class ProductDetailSerializer(ModelSerializer):
+    category = PrimaryKeyRelatedField(queryset=Category.objects.all(), required=False)
+    brand = PrimaryKeyRelatedField(queryset=Brand.objects.all(), required=False)
+    created_by = SerializerMethodField()
+    field_values = ProductFieldValueSerializer(many=True, read_only=True)
+    images = ProductImageSerializer(many=True, required=False)
+
+    class Meta:
+        model = Product
+        fields = ['id', 'name', 'category', 'brand', 'created_by', 'description', 'price',
+                  'discounted_price', 'stock', 'discount', 'created', 'updated', 'average_rating',
+                  'field_values', 'images']
+        read_only_fields = ['discounted_price', 'average_rating', 'created', 'updated', 'created_by']
+
+    def get_created_by(self, obj):
+        return UserSerializer(obj.created_by, context=self.context).data
+
+    def validate(self, attrs):
+        category = attrs.get('category')
+        brand = attrs.get('brand')
+        view = self.context.get('view')
+
+        if not category and view:
+            category_id = view.kwargs.get('category_pk')
+            if category_id:
+                try:
+                    attrs['category'] = Category.objects.get(id=category_id)
+                except Category.DoesNotExist:
+                    raise ValidationError({"category": "Category from URL does not exist."})
+        if not brand and view:
+            brand_id = view.kwargs.get('brand_pk')
+            if brand_id:
+                try:
+                    attrs['brand'] = Brand.objects.get(id=brand_id)
+                except Brand.DoesNotExist:
+                    raise ValidationError({"brand": "Brand from URL does not exist."})
+
+
+        if not attrs.get('category'):
+            raise ValidationError({"category": "This field is required."})
+        if not attrs.get('brand'):
+            raise ValidationError({"brand": "This field is required."})
+
+        return attrs
 
     def create(self, validated_data):
         images_data = validated_data.pop('images', [])
         validated_data['created_by'] = self.context['request'].user
-        product = models.Product.objects.create(**validated_data)
+        product = Product.objects.create(**validated_data)
 
         for image_data in images_data:
             image_serializer = ProductImageSerializer(
                 data=image_data,
-                context={**self.context, "product": product}
+                context={**self.context, 'product': product}
             )
             image_serializer.is_valid(raise_exception=True)
             image_serializer.save()
         return product
 
     def update(self, instance, validated_data):
-        images_data = validated_data.pop('images')
+        images_data = validated_data.pop('images', None)
         instance = super().update(instance, validated_data)
 
-        for image_data in images_data:
-            image_serializer = ProductImageSerializer(
-                data=image_data,
-                context={**self.context, "product": instance}
-            )
-            image_serializer.is_valid(raise_exception=True)
-            image_serializer.save()
+        if images_data is not None:
+            for image_data in images_data:
+                image_serializer = ProductImageSerializer(
+                    data=image_data,
+                    context={**self.context, 'product': instance}
+                )
+                image_serializer.is_valid(raise_exception=True)
+                image_serializer.save()
         return instance
-
-
-class CategorySerializer(serializers.ModelSerializer):
-    created_by = serializers.SerializerMethodField()
-    products = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
-    class Meta:
-        model = models.Category
-        fields = ['id', 'name', 'description', 'created_by', 'created', 'updated', 'products']
-        read_only_fields = ['created_by', 'product']
-
-    def get_created_by(self, obj):
-        user = self.context['request'].user
-
-        if user.is_staff and user.is_superuser:
-            return users.serializers.UserSerializer(obj.created_by).data
-
-        return {
-            "fullname": f"{obj.created_by.first_name} {obj.created_by.last_name}"
-        }
-
-
-    def create(self, validated_data):
-        validated_data['created_by'] = self.context['request'].user
-        return super().create(validated_data)
-
-
-class BrandSerializer(serializers.ModelSerializer):
-    created_by = serializers.SerializerMethodField()
-    products = serializers.PrimaryKeyRelatedField(read_only=True, many=True)
-    class Meta:
-        model = models.Brand
-        fields = ['id', 'name', 'description', 'logo', 'created_by', 'created','updated', 'products']
-        read_only_fields = ['created_by', 'created','updated']
-
-    def get_created_by(self, obj):
-        user = self.context['request'].user
-
-        if user.is_staff and user.is_superuser:
-            return users.serializers.UserSerializer(obj.created_by).data
-
-        return {
-            "full name": f"{obj.created_by.first_name} {obj.created_by.last_name}"
-        }
-    def create(self, validated_data):
-        validated_data['created_by'] = self.context['request'].user
-        return super().create(validated_data)
-
-
-class ProductFieldSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = models.ProductField
-        fields = ['id', 'name', 'field_type', 'choices']
-
-
-
-
-
-
-
-
-
