@@ -9,16 +9,17 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrderItem
-        fields = ['id', 'product', 'quantity', 'discount', 'price_at_order', 'created', 'delivered_at', 'total_price']
-        read_only_fields = ['price_at_order', 'created', 'delivered_at', 'total_price']
+        fields = ['id', 'product', 'quantity', 'discount', 'price_at_order', 'created', 'total_price']
+        read_only_fields = ['price_at_order', 'created', 'total_price']
+
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
 
     class Meta:
         model = Order
-        fields = ['id', 'basket', 'status', 'total_price', 'created', 'updated', 'items']
-        read_only_fields = ['total_price', 'created', 'updated', 'items', 'basket']
+        fields = ['id', 'basket', 'status', 'total_price', 'delivered_at', 'created', 'updated', 'items']
+        read_only_fields = ['total_price', 'created', 'updated', 'items', 'basket', 'delivered_at']
 
     def create(self, validated_data):
         user = self.context['request'].user
@@ -63,9 +64,8 @@ class OrderSerializer(serializers.ModelSerializer):
                     product.save()
 
             if new_status == "delivered" and instance.status != "delivered":
-                for item in instance.items.all():
-                    item.delivered_at = now()
-                    item.save()
+                instance.delivered_at = now()
+
             instance.status = new_status
             instance.save()
             instance.refresh_from_db()
