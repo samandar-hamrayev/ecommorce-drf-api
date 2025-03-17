@@ -3,6 +3,7 @@ from rest_framework.viewsets import ModelViewSet
 from .models import Basket, BasketItem
 from .serializers import BasketItemSerializer, BasketSerializer
 
+
 class BasketItemViewSet(ModelViewSet):
     serializer_class = BasketItemSerializer
     permission_classes = [IsAuthenticated]
@@ -19,6 +20,7 @@ class BasketItemViewSet(ModelViewSet):
         context = super().get_serializer_context()
         context['basket'] = Basket.objects.get(user=self.request.user)
         return context
+
 
 class BasketViewSet(ModelViewSet):
     serializer_class = BasketSerializer

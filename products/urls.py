@@ -38,6 +38,7 @@ product_router.register(r'images', ProductImageViewSet, basename='product-images
 product_router.register(r'field-values', ProductFieldValueViewSet, basename='product-field-values')
 
 
+
 urlpatterns = [
     path('', include(router.urls)),
     path('', include(category_router.urls)),

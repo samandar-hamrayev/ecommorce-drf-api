@@ -18,10 +18,12 @@ class OrderViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        if self.request.user.is_staff:
+            return Order.objects.all()
         return Order.objects.filter(basket__user=self.request.user)
 
     def get_permissions(self):
-        if self.action in ['update', 'partial_update', 'destroy']:
+        if self.action in ['update', 'partial_update', 'destroy', 'get']:
             return [IsAdminUser()]
         return [IsAuthenticated()]
 

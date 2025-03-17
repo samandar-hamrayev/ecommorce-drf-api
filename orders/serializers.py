@@ -2,7 +2,7 @@ from django.db import transaction
 from rest_framework import serializers
 from .models import OrderItem, Order
 from carts.models import Basket
-
+from django.utils.timezone import now
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -18,7 +18,7 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ['id', 'basket', 'status', 'total_price', 'created', 'updated', 'items']
-        read_only_fields = ['total_price', 'created', 'updated', 'items']
+        read_only_fields = ['total_price', 'created', 'updated', 'items', 'basket']
 
     def create(self, validated_data):
         user = self.context['request'].user
@@ -62,6 +62,10 @@ class OrderSerializer(serializers.ModelSerializer):
                     product.stock += item.quantity
                     product.save()
 
+            if new_status == "delivered" and instance.status != "delivered":
+                for item in instance.items.all():
+                    item.delivered_at = now()
+                    item.save()
             instance.status = new_status
             instance.save()
             instance.refresh_from_db()
