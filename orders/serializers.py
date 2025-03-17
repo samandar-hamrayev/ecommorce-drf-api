@@ -53,3 +53,17 @@ class OrderSerializer(serializers.ModelSerializer):
 
         except Basket.DoesNotExist:
             raise serializers.ValidationError({"detail": "Basket not found"})
+    def update(self, instance, validated_data):
+        new_status = validated_data.get('status', instance.status)
+
+        with transaction.atomic():
+            if new_status == "cancelled" and instance.status != "cancelled":
+                for item in instance.items.all():
+                    product = item.product
+                    product.stock += item.quantity
+                    product.save()
+
+            instance.status = new_status
+            instance.save()
+            instance.refresh_from_db()
+            return instance
