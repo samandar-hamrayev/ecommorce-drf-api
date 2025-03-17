@@ -10,7 +10,7 @@ router.register(r'categories', CategoryViewSet, basename='category')
 router.register(r'brands', BrandViewSet, basename='brand')
 router.register(r'products', ProductViewSet, basename='product')
 router.register(r'images', ProductImageViewSet, basename='images')
-router.register(r'product-fields', ProductFieldViewSet, basename='product-field')
+router.register(r'fields', ProductFieldViewSet, basename='field')
 router.register(r'product-field-values', ProductFieldValueViewSet, basename='product-field-value')
 
 
@@ -20,6 +20,7 @@ category_router.register(r'products', ProductViewSet, basename='category-product
 
 category_product_router = NestedSimpleRouter(category_router, r'products', lookup='product')
 category_product_router.register(r'images', ProductImageViewSet, basename='category-product-images')
+category_product_router.register(r'fields', ProductFieldViewSet, basename='category-product-fields')
 category_product_router.register(r'field-values', ProductFieldValueViewSet, basename='category-product-field-values')
 
 # nested url for category
@@ -28,6 +29,7 @@ brand_router.register(r'products', ProductViewSet, basename='brand-products')
 
 brand_product_router = NestedSimpleRouter(brand_router, r'products', lookup='product')
 brand_product_router.register(r'images', ProductImageViewSet, basename='brand-product-images')
+category_product_router.register(r'fields', ProductFieldViewSet, basename='brand-product-fields')
 brand_product_router.register(r'field-values', ProductFieldValueViewSet, basename='brand-product-field-values')
 
 # nested url for products

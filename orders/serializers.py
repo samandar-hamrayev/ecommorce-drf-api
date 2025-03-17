@@ -1,8 +1,6 @@
 from django.db import transaction
 from rest_framework import serializers
-
 from .models import OrderItem, Order
-
 from carts.models import Basket
 
 
@@ -53,6 +51,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
         except Basket.DoesNotExist:
             raise serializers.ValidationError({"detail": "Basket not found"})
+
     def update(self, instance, validated_data):
         new_status = validated_data.get('status', instance.status)
 
