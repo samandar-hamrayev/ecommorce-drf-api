@@ -3,31 +3,25 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from users.models import User
 from products.models import Product
 
-
-class Comment(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='comments')
+class Review(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
     text = models.TextField()
+    value = models.PositiveIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        blank=True, null=True
+    )
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Comment by {self.user.email} on {self.product.name}"
-
-    class Meta:
-        unique_together = ('user', 'product')
-
-
-class Rating(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ratings')
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='ratings')
-    value = models.PositiveIntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(5)],
-    )
-    created = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.value}/5 by {self.user.email} for {self.product.name}"
+        if self.text and self.value:
+            return f"Review by {self.user.email} on {self.product.name}: {self.value}/5 - {self.text[:20]}"
+        elif self.text:
+            return f"Comment by {self.user.email} on {self.product.name}: {self.text[:20]}"
+        elif self.value:
+            return f"Rating by {self.user.email} on {self.product.name}: {self.value}/5"
+        return f"Review by {self.user.email} on {self.product.name}"
 
     class Meta:
         unique_together = ('user', 'product')

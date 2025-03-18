@@ -85,7 +85,7 @@ class CategoryDetailSerializer(ModelSerializer):
 
     def get_products(self, obj):
         products = obj.products.all()
-        return ProductDetailSerializer(products, many=True, context=self.context).data
+        return ProductListSerializer(products, many=True, context=self.context).data
 
     def create(self, validated_data):
         validated_data['created_by'] = self.context['request'].user
@@ -117,7 +117,7 @@ class BrandDetailSerializer(ModelSerializer):
 
     def get_products(self, obj):
         products = obj.products.all()
-        return ProductDetailSerializer(products, many=True, context=self.context).data
+        return ProductListSerializer(products, many=True, context=self.context).data
 
     def create(self, validated_data):
         validated_data['created_by'] = self.context['request'].user

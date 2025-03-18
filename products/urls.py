@@ -35,6 +35,7 @@ brand_product_router.register(r'field-values', ProductFieldValueViewSet, basenam
 # nested url for products
 product_router = NestedSimpleRouter(router, r'products', lookup='product')
 product_router.register(r'images', ProductImageViewSet, basename='product-images')
+product_router.register(r'fields', ProductFieldViewSet, basename='product-fields')
 product_router.register(r'field-values', ProductFieldValueViewSet, basename='product-field-values')
 
 

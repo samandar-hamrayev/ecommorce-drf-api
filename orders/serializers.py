@@ -41,7 +41,7 @@ class OrderSerializer(serializers.ModelSerializer):
                         order=order,
                         product=item.product,
                         quantity=item.quantity,
-                        discount=item.product.discount if hasattr(item.product, 'discount') else None,  # Agar discount mahsulotda bo‘lsa
+                        discount=item.product.discount if hasattr(item.product, 'discount') else None,
                         price_at_order=item.product.price
                     )
 
@@ -55,7 +55,6 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         new_status = validated_data.get('status', instance.status)
-
         with transaction.atomic():
             if new_status == "cancelled" and instance.status != "cancelled":
                 for item in instance.items.all():
