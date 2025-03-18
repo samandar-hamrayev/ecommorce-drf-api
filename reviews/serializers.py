@@ -8,7 +8,6 @@ from reviews.models import Review
 class ReviewSerializer(serializers.ModelSerializer):
     user = serializers.CharField(source='user.email', read_only=True)
 
-
     class Meta:
         model = Review
         fields = ['id', 'user', 'product', 'text', 'value', 'created', 'updated']
@@ -47,11 +46,8 @@ class ReviewSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        user = validated_data['user']
         product = validated_data['product']
-
-        has_already = Review.objects.filter(user=user, product=product).exists()
-        if has_already:
+        if Review.objects.filter(user=self.context['request'].user, product=product).exists():
             raise serializers.ValidationError({"detail": "You can only review one product once."})
         validated_data['user'] = self.context['request'].user
         return super().create(validated_data)

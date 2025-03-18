@@ -1,6 +1,6 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
 from products.permissions import IsOwner
@@ -17,14 +17,25 @@ class ReviewViewSet(ModelViewSet):
     ordering = ['-created']
 
     def get_permissions(self):
-        if self.action in ('create', 'update', 'partail_update', 'destroy'):
+
+        if self.request.user.is_authenticated and self.request.user.is_superuser:
             return [IsAuthenticated()]
+
+
+        if self.action in ('create', 'update', 'partial_update', 'destroy'):
+            return [IsAuthenticated(), IsOwner()]
         return [IsAuthenticated()]
 
     def get_queryset(self):
-        queryset = Review.objects.select_related('user', 'product').prefetch_related(
-            'product__order_items'
-        )
+        if self.request.user.is_authenticated and self.request.user.is_superuser:
+            queryset = Review.objects.select_related('user', 'product').prefetch_related(
+                'product__order_items'
+            )
+        else:
+            queryset = Review.objects.filter(user=self.request.user).select_related(
+                'user', 'product'
+            ).prefetch_related('product__order_items')
+
         product_pk = self.kwargs.get('product_pk')
         if product_pk:
             queryset = queryset.filter(product_id=product_pk)
