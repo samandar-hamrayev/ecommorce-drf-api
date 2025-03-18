@@ -78,7 +78,7 @@ class Product(models.Model):
 
     @property
     def average_rating(self):
-        ratings = self.ratings.all()
+        ratings = self.reviews.all()
         if ratings.exists():
             return round(sum(rating.value for rating in ratings) / ratings.count(), 2)
         return 0
