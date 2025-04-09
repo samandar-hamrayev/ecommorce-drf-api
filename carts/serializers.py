@@ -9,6 +9,7 @@ class BasketItemSerializer(serializers.ModelSerializer):
     product_id = serializers.PrimaryKeyRelatedField(
         queryset=Product.objects.all(), source='product', write_only=True
     )
+
     total_price = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
 
     class Meta:
