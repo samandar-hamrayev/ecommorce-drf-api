@@ -67,7 +67,7 @@ class UserListView(ListAPIView):
     ordering_fields = ['created', 'email']
 
 class UserRoleUpdateView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [AllowAny]
     def patch(self, request, pk):
         try:
             user = User.objects.get(pk=pk)
